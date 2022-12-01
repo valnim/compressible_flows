@@ -2,7 +2,7 @@ Input file for 1d-nozzle solver
 Laval nozzle flow 
 -------------------------------------------------------------
 C.. IREAD   ITER     NPRINT    CONV
-      0      100000         10    1.e-4
+      0      3         10    1.e-4
 C.. imax    x_min[m]   x_max[m]  y_min[m]   y_max[m]     
      101     -0.333333    1.        0.1       0.2 
 C..  R      kappa

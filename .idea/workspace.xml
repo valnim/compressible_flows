@@ -10,6 +10,18 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="74174f9d-0bbf-44e8-8e8e-71c15c0a91a9" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/CompressibleFlows/CompressibleFlows.depend" beforeDir="false" afterPath="$PROJECT_DIR$/CompressibleFlows/CompressibleFlows.depend" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/CompressibleFlows/bin/Debug/CompressibleFlows.exe" beforeDir="false" afterPath="$PROJECT_DIR$/CompressibleFlows/bin/Debug/CompressibleFlows.exe" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/CompressibleFlows/cont.out" beforeDir="false" afterPath="$PROJECT_DIR$/CompressibleFlows/cont.out" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/CompressibleFlows/mach.out" beforeDir="false" afterPath="$PROJECT_DIR$/CompressibleFlows/mach.out" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/CompressibleFlows/nozzle.log" beforeDir="false" afterPath="$PROJECT_DIR$/CompressibleFlows/nozzle.log" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/CompressibleFlows/nozzle.out" beforeDir="false" afterPath="$PROJECT_DIR$/CompressibleFlows/nozzle.out" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/CompressibleFlows/nozzle_3.dat" beforeDir="false" afterPath="$PROJECT_DIR$/CompressibleFlows/nozzle_3.dat" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/CompressibleFlows/nozzle_3.dat.bak" beforeDir="false" afterPath="$PROJECT_DIR$/CompressibleFlows/nozzle_3.dat.bak" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/CompressibleFlows/obj/Debug/all3_0.o" beforeDir="false" afterPath="$PROJECT_DIR$/CompressibleFlows/obj/Debug/all3_0.o" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/CompressibleFlows/press.out" beforeDir="false" afterPath="$PROJECT_DIR$/CompressibleFlows/press.out" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/CompressibleFlows/ptot.out" beforeDir="false" afterPath="$PROJECT_DIR$/CompressibleFlows/ptot.out" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/all3_0.c" beforeDir="false" afterPath="$PROJECT_DIR$/all3_0.c" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -57,7 +69,7 @@
       <option name="presentableId" value="Default" />
       <updated>1669898908730</updated>
       <workItem from="1669898913678" duration="2147000" />
-      <workItem from="1669901101321" duration="1656000" />
+      <workItem from="1669901101321" duration="11814000" />
     </task>
     <servers />
   </component>
