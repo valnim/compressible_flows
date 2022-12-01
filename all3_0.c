@@ -261,10 +261,15 @@ void input()
 /*--------------------------grid definition -----------------------------------*/
 void grid()
 {
-	//int i;
+	int i;
 	// Berechnen von dx, x[i], area[i], da_dx[i]
 	// Calculation of dx, x[i], area[i], da_dx[i]
-
+    dx = (x_max-x_min)/(imax-1);
+    for (i=0; i<imax-1; i++){
+        x[i] = dx*i;
+        area[i] = (y_min+(y_max-y_min)*pow(x[i],2)/pow(x_max,2));
+        da_dx[i] = (y_max-y_min)*x[i]*2/pow(x_max,2);
+    }
 }
 
 
