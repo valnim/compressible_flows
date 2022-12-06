@@ -94,14 +94,14 @@ double time ;
 double area[Mat_dim] = {0.0};
 double da_dx[Mat_dim] = {0.0};
 /*vektor*/
-double u[Mat_dim][3] = {{0.0}};
-double u_q[Mat_dim][3] = {{0.0}};
-double u_qq[Mat_dim][3] = {{0.0}};
-double dissip[Mat_dim][3] = {{0.0}};
-double delta_u[Mat_dim][3] = {{0.0}};
-double f[Mat_dim][3] = {{0.0}};
-double f_star[Mat_dim][3] = {{0.0}};
-double source[Mat_dim][3] = {{0.0}};
+double u[Mat_dim][3] = {0.0};
+double u_q[Mat_dim][3] = {0.0};
+double u_qq[Mat_dim][3] = {0.0};
+double dissip[Mat_dim][3] = {0.0};
+double delta_u[Mat_dim][3] = {0.0};
+double f[Mat_dim][3] = {0.0};
+double f_star[Mat_dim][3] = {0.0};
+double source[Mat_dim][3] = {0.0};
 /*boundary*/
 double rho_tot;
 double h_tot;
@@ -178,14 +178,14 @@ void main()
 
       			calc_f_star_central();
 
-                for (i=1; i<imax-1; i++)
-                {
-                    for (k=0;k<3;k++)
-                    {
-                        delta_u[i][k] = -dt/dx*(f_star[i][k]-f_star[i-1][k]) + dt*source[i][k];
-                        u[i][k] = u[i][k] + delta_u[i][k];
-                    }
-                }
+				for (i=1; i<imax-1; i++)
+				{
+					for (k=0;k<3;k++)
+					{
+						//delta_u[i][k] = ...  //  Calculation of delta_u using the conservative star fluxes
+						u[i][k] = u[i][k] + delta_u[i][k];
+					}
+				}
 
 				break;
 
@@ -218,6 +218,8 @@ void main()
 	output();
 
 	fclose(logfile);
+
+	return;
 }
 
 
@@ -259,15 +261,21 @@ void input()
 /*--------------------------grid definition -----------------------------------*/
 void grid()
 {
-    int i;
-    // Berechnen von dx, x[i], area[i], da_dx[i]
-    // Calculation of dx, x[i], area[i], da_dx[i]
-    dx = (x_max-x_min)/(imax-1);
-    for (i=0; i<imax; i++){
-        x[i] = x_min + dx*i;
-        area[i] = (y_min+(y_max-y_min)*pow(x[i],2)/pow(x_max,2));
-        da_dx[i] = (y_max-y_min)*x[i]*2./pow(x_max,2);
+	int i;
+
+	dx = (x_max - x_min) / (imax - 1);
+
+    for(i=0; i<=(imax-1); i++) {
+
+        x[i] = x_min + dx * i;
+
+        area[i] = (y_max + (y_max - y_min) * pow(x[i],2) / pow(x_max,2));
+
+        da_dx[i] = 2. * (y_max - y_min) * x[i] / pow(x_max, 2);
     }
+
+	// calculation of  dx, x[i], area[i], da_dx[i]
+
 }
 
 
@@ -277,20 +285,21 @@ void init()
     FILE *old_data;
 	int i;
 
-    // Berechnen von rho_tot, am Eintritt fuer die Randbedingungen
-    // Calculaton of rho_tot at the inlet for the boundary condition algorithm
-    rho_tot = p_tot/R/T_tot;
+	// Calculaton of rho_tot at the inlet for the boundary condition algorithm
 
+	rho_tot = p_tot / (R * T_tot);
 
-    if (iread == 0)
-    {
-        // Initialisieren des Stroemungsfeldes (Zustandsvektor U) mit den Ruhezustandswerten
-        // Initialisation of the flow field (state vector U) with the stagnation values (=total values)
-        for (i=0; i<imax; i++){
-            u[i][0] = rho_tot;
-            u[i][1] = 0.0;
-            u[i][2] = p_tot/(gamma-1);
-        }
+	if (iread == 0)
+	{
+		// Initialisation of the flow field (state vector U) with the stagnation values (=total values)
+
+		for(i=0; i<=(imax-1); i++) {
+
+		    u[i][0] = rho_tot;
+		    u[i][1] = 0.0;
+		    u[i][2] = p_tot / (gamma - 1);
+
+		}
 
 	}
 	else
@@ -312,32 +321,33 @@ void init()
 //--------------------------timestep calculation--------------------------------------
 void timestep()
 {
-    int i;
-    double eigenmax,vel,p,c,eigen,rho;
-    /*
-Bestimmen des maximalen Eigenwertes eigenmax fuer das gesamte Stroemungsfeld
-         eigen = max(fabs(vel+c),fabs(vel-c))
-Calculation of the maximum eigenvalue eigenmax for the total flow field
+	int i;
+	double eigenmax,vel,p,c,eigen,T;
+
+
+/*Calculation of the maximum eigenvalue eigenmax for the total flow field
          eigen = max(fabs(vel+c),fabs(vel-c))
 
-Bestimmen von dt als Funktion von cfl und max. Eigenwert
 Find dt as function of cfl and maximium eigenvalue
 
 */
-    for (i=0; i<imax; i++){
-        rho = u[i][0];
-        vel = u[i][1]/rho;
-        p = (u[i][2]-rho*pow(vel,2)/2)*(gamma-1);
-        c = pow(gamma*p/rho,0.5);
+
+    eigenmax = 0;
+
+    for(i=0; i<=(imax-1); i++) {
+
+        vel = u[i][1] / u[i][0];
+
+        T = (u[i][2] / u[i][0] - pow(vel, 2) / 2) * (gamma - 1) / R;
+
+        c = pow(gamma * R * T, 0.5);
+
         eigen = max(fabs(vel+c),fabs(vel-c));
-        if (i == 0){
-            eigenmax = eigen;
-        }
-        if (eigen > eigenmax){
-            eigenmax = eigen;
-        }
+
+        eigenmax = max(eigen, eigenmax);
     }
-    dt = cfl*dx/eigenmax;
+
+    dt = cfl * dx / eigenmax;
 
 	time = time + dt;
 }
@@ -345,43 +355,23 @@ Find dt as function of cfl and maximium eigenvalue
 //-----------------------flux and source vector------------------------------------------
 void calc_f()
 {
-    double rho,vel,p;
+    double rho,vel,p, temp;
+	int i;
 
 	//Berechnung des des Flussvektors F und des Source-Vektors in allen Punkten
 	//Calculaton of flux vector F and source vector S in all grid points
-
-    for (int i = 0; i < imax; i++) {
-        rho = u[i][0];
-        vel = u[i][1]/rho;
-        p = (u[i][2]-rho*pow(vel,2)/2)*(gamma-1);
-        f[i][0] = vel*rho;
-        f[i][1] = pow(vel*rho,2)/rho+p;
-        f[i][2] = vel*(u[i][2]+p);
-
-        source[i][0] = -da_dx[i]/area[i]*rho*vel;
-        source[i][1] = -da_dx[i]/area[i]*rho*pow(vel,2);
-        source[i][2] = -da_dx[i]/area[i]*vel*(u[i][2]+p);
-    }
-
 
 }
 
 //------------------------simple dissipation vector---------------------------------------
 void dissip_simple()
 {
-    int i,k;
+	int i,k;
 
-    // dissipation vector at i+1/2
-    for (i = 1; i < imax-2; i++) {
-        for (k=0;k<3; k++){
-            dissip[i][k] = -eps_s*dx*(u[i+2][k]-3*u[i+1][k]+3*u[i][k]-u[i-1][k]);
-        }
-    }
-    // dissipation vector at i=0 and i=imax-2
-    for (k=0;k<3; k++){
-        dissip[0][k] = -eps_s*dx*(u[2][k]-2*u[1][k]+u[0][k]);
-        dissip[imax-2][k] = -eps_s*dx*(-u[imax-1][k]+2*u[imax-2][k]-u[imax-3][k]);
-    }
+	// dissipation vector at i+1/2
+
+
+	// dissipation vector at i=0 and i=imax-2
 
 
 }
@@ -410,12 +400,8 @@ void calc_f_star_central()
 {
    	int i,k;
 
-    // calculation of f_star at i+1/2 for central method
-    for (i = 0; i < imax-1; i++) {
-        for (k=0;k<3; k++){
-            f_star[i][k] = 1/2*(f[i+1][k]+f[i][k]) - dissip[i][k];
-        }
-    }
+	// calculation of f_star at i+1/2 for central method
+
 
 }
 
@@ -552,8 +538,7 @@ void boundary_q()
 //----------------------------U boundary conditions------------------------------------------
 void boundary()
 {
-    double p,vel;
-    double rho;
+    double rho,p,vel,temp,e,rho_vel;
 
 	//	Bestimmen der Randwerte fuer i=0 und i=imax-1 fuer U-Vektor
 	//	Calculation of boundary values for i=0 and i=imax-1 for U vector
@@ -561,20 +546,42 @@ void boundary()
 
 	/*inlet i=0*/
 
-    rho = u[1][0]-(u[2][0]-u[1][0]);
-    if (rho > rho_tot)	rho = rho_tot;
-    p = p_tot*pow(R*T_tot*rho/p_tot,gamma);
-    vel = sqrt(2*gamma/(gamma-1)*R*T_tot*(1-pow(p/p_tot,(gamma-1)/gamma)));
+	rho = 2 * u[1][0] - u[2][0];
+
+	if (rho > rho_tot){
+
+        rho = rho_tot;
+	}
+
+	p = p_tot * pow((R * T_tot * rho / p_tot), gamma);
+
+    vel = pow(2 * gamma * R * T_tot / (gamma - 1) * (1 - pow(p / p_tot, ((gamma - 1)/gamma))),0.5);
+
+    e = p / (gamma - 1) * pow(vel, 2) * rho / 2;
+
     u[0][0] = rho;
-    u[0][1] = vel*rho;
-    u[0][2] = p/(gamma-1) + rho*pow(vel,2)/2;
+    u[0][1] = rho * vel;
+    u[0][2] = e;
 
-    /*outlet i=imax-1*/
-    // TODO add if for supersonic
-    u[imax-1][0] = u[imax-2][0]+(u[imax-2][0]-u[imax-3][0]);
-    u[imax-1][1] = u[imax-2][1]+(u[imax-2][1]-u[imax-3][1]);
-    u[imax-1][2] = p_exit/(gamma-1) + u[imax-1][0] * pow(u[imax-1][1]/u[imax-1][0],2)/2;
+	/*outlet i=imax-1*/
 
+	rho = 2 * u[imax-2][0] - u[imax-3][0];
+    rho_vel = 2 * u[imax-2][1] - u[imax-3][1];
+
+    if (sub_exit == 1){
+
+       vel = rho_vel / rho;
+
+       e = p_exit / (gamma-1) + rho * pow(vel,2) / 2;
+    }
+    else
+    {
+        e = 2 * u[imax-2][2] - u[imax-3][2];
+    }
+
+    u[imax-1][0] = rho;
+    u[imax-1][1] = rho_vel;
+    u[imax-1][2] = e;
 }
 
 //----------------------------------------------------------------------
