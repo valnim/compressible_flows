@@ -1,3 +1,5 @@
+#pragma clang diagnostic push
+#pragma ide diagnostic ignored "cert-err34-c"
 /*      program CENTRAL
 c***********************************************************************
 c
@@ -279,7 +281,7 @@ void init()
 
     // Berechnen von rho_tot, am Eintritt fuer die Randbedingungen
     // Calculaton of rho_tot at the inlet for the boundary condition algorithm
-    rho_tot = p_tot/R/T_tot;
+    rho_tot = p_tot/(R*T_tot);
 
 
     if (iread == 0)
@@ -313,7 +315,7 @@ void init()
 void timestep()
 {
     int i;
-    double eigenmax,vel,p,c,eigen,rho;
+    double eigenmax,vel,p,c,eigen,rho,T;
     /*
 Bestimmen des maximalen Eigenwertes eigenmax fuer das gesamte Stroemungsfeld
          eigen = max(fabs(vel+c),fabs(vel-c))
@@ -327,8 +329,12 @@ Find dt as function of cfl and maximium eigenvalue
     for (i=0; i<imax; i++){
         rho = u[i][0];
         vel = u[i][1]/rho;
-        p = (u[i][2]-rho*pow(vel,2)/2)*(gamma-1);
-        c = pow(gamma*p/rho,0.5);
+        //p = (u[i][2]-rho*pow(vel,2)/2)*(gamma-1);
+        //c = pow(gamma*p/rho,0.5);
+
+        T = (u[i][2] / u[i][0] - pow(vel, 2) / 2) * (gamma - 1) / R;
+        c = pow(gamma * R * T, 0.5);
+
         eigen = max(fabs(vel+c),fabs(vel-c));
         if (i == 0){
             eigenmax = eigen;
@@ -337,7 +343,8 @@ Find dt as function of cfl and maximium eigenvalue
             eigenmax = eigen;
         }
     }
-    dt = cfl*dx/eigenmax;
+
+    dt = cfl * dx / eigenmax;
 
 	time = time + dt;
 }
@@ -562,8 +569,11 @@ void boundary()
 	/*inlet i=0*/
 
     rho = u[1][0]-(u[2][0]-u[1][0]);
+
     if (rho > rho_tot)	rho = rho_tot;
+
     p = p_tot*pow(R*T_tot*rho/p_tot,gamma);
+
     vel = sqrt(2*gamma/(gamma-1)*R*T_tot*(1-pow(p/p_tot,(gamma-1)/gamma)));
     u[0][0] = rho;
     u[0][1] = vel*rho;
@@ -573,7 +583,13 @@ void boundary()
     // TODO add if for supersonic
     u[imax-1][0] = u[imax-2][0]+(u[imax-2][0]-u[imax-3][0]);
     u[imax-1][1] = u[imax-2][1]+(u[imax-2][1]-u[imax-3][1]);
-    u[imax-1][2] = p_exit/(gamma-1) + u[imax-1][0] * pow(u[imax-1][1]/u[imax-1][0],2)/2;
+
+    if (sub_exit == 1){
+        u[imax-1][2] = p_exit/(gamma-1) + u[imax-1][0] * pow(u[imax-1][1]/u[imax-1][0],2)/2;
+    }
+    else {
+        u[imax-1][2] = 2 * u[imax-2][2] - u[imax-3][2];
+    }
 
 }
 
@@ -660,3 +676,5 @@ void output()
     fclose (result);
 }
 
+
+#pragma clang diagnostic pop
