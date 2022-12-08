@@ -269,7 +269,7 @@ void grid()
 
         x[i] = x_min + dx * i;
 
-        area[i] = (y_max + (y_max - y_min) * pow(x[i],2) / pow(x_max,2));
+        area[i] = y_max + (y_max - y_min) * pow(x[i],2) / pow(x_max,2);
 
         da_dx[i] = 2. * (y_max - y_min) * x[i] / pow(x_max, 2);
     }
@@ -339,7 +339,6 @@ Find dt as function of cfl and maximium eigenvalue
         vel = u[i][1] / u[i][0];
 
         T = (u[i][2] / u[i][0] - pow(vel, 2) / 2) * (gamma - 1) / R;
-
         c = pow(gamma * R * T, 0.5);
 
         eigen = max(fabs(vel+c),fabs(vel-c));
@@ -557,7 +556,7 @@ void boundary()
 
     vel = pow(2 * gamma * R * T_tot / (gamma - 1) * (1 - pow(p / p_tot, ((gamma - 1)/gamma))),0.5);
 
-    e = p / (gamma - 1) * pow(vel, 2) * rho / 2;
+    e = p / (gamma - 1) + pow(vel, 2) * rho / 2;
 
     u[0][0] = rho;
     u[0][1] = rho * vel;
