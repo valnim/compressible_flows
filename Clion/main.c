@@ -1,5 +1,3 @@
-#pragma clang diagnostic push
-#pragma ide diagnostic ignored "cert-err34-c"
 /*      program CENTRAL
 c***********************************************************************
 c
@@ -676,5 +674,3 @@ void output()
     fclose (result);
 }
 
-
-#pragma clang diagnostic pop
