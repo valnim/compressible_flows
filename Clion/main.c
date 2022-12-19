@@ -262,10 +262,10 @@ void grid()
     int i;
     // Berechnen von dx, x[i], area[i], da_dx[i]
     // Calculation of dx, x[i], area[i], da_dx[i]
-    dx = (x_max-x_min)/(imax-1);
+    dx = (x_max - x_min) / (imax - 1);
     for (i=0; i<imax; i++){
-        x[i] = x_min + dx*i;
-        area[i] = (y_min+(y_max-y_min)*pow(x[i],2)/pow(x_max,2));
+        x[i] = x_min + dx * i;
+        area[i] = y_min + (y_max - y_min) * pow(x[i],2) / pow(x_max,2);
         da_dx[i] = (y_max-y_min)*x[i]*2./pow(x_max,2);
     }
 }
@@ -279,7 +279,8 @@ void init()
 
     // Berechnen von rho_tot, am Eintritt fuer die Randbedingungen
     // Calculaton of rho_tot at the inlet for the boundary condition algorithm
-    rho_tot = p_tot/(R*T_tot);
+
+    rho_tot = p_tot / (R * T_tot);
 
 
     if (iread == 0)
@@ -289,7 +290,7 @@ void init()
         for (i=0; i<imax; i++){
             u[i][0] = rho_tot;
             u[i][1] = 0.0;
-            u[i][2] = p_tot/(gamma-1);
+            u[i][2] = p_tot / (gamma - 1);
         }
 
 	}
