@@ -178,14 +178,14 @@ void main()
 
       			calc_f_star_central();
 
-				for (i=1; i<imax-1; i++)
-				{
-					for (k=0;k<3;k++)
-					{
-						//delta_u[i][k] = ...  //  Calculation of delta_u using the conservative star fluxes
-						u[i][k] = u[i][k] + delta_u[i][k];
-					}
-				}
+                for (i=1; i<imax-1; i++)
+                {
+                    for (k=0;k<3;k++)
+                    {
+                        delta_u[i][k] = -dt/dx*(f_star[i][k]-f_star[i-1][k]) + dt*source[i][k];
+                        u[i][k] = u[i][k] + delta_u[i][k];
+                    }
+                }
 
 				break;
 
@@ -261,21 +261,15 @@ void input()
 /*--------------------------grid definition -----------------------------------*/
 void grid()
 {
-	int i;
-
-	dx = (x_max - x_min) / (imax - 1);
-
-    for(i=0; i<=(imax-1); i++) {
-
+    int i;
+    // Berechnen von dx, x[i], area[i], da_dx[i]
+    // Calculation of dx, x[i], area[i], da_dx[i]
+    dx = (x_max - x_min) / (imax - 1);
+    for (i=0; i<imax; i++){
         x[i] = x_min + dx * i;
-
-        area[i] = y_max + (y_max - y_min) * pow(x[i],2) / pow(x_max,2);
-
-        da_dx[i] = 2. * (y_max - y_min) * x[i] / pow(x_max, 2);
+        area[i] = y_min + (y_max - y_min) * pow(x[i],2) / pow(x_max,2);
+        da_dx[i] = (y_max-y_min)*x[i]*2./pow(x_max,2);
     }
-
-	// calculation of  dx, x[i], area[i], da_dx[i]
-
 }
 
 
@@ -285,9 +279,10 @@ void init()
     FILE *old_data;
 	int i;
 
-	// Calculaton of rho_tot at the inlet for the boundary condition algorithm
+    // Berechnen von rho_tot, am Eintritt fuer die Randbedingungen
+    // Calculaton of rho_tot at the inlet for the boundary condition algorithm
 
-	rho_tot = p_tot / (R * T_tot);
+    rho_tot = p_tot / (R * T_tot);
 
 	if (iread == 0)
 	{
