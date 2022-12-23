@@ -160,7 +160,7 @@ void main()
 				{
 					for (k=0;k<3;k++)
 					{
-						//delta_u[i][k] = ...  //  Calculation of delta_u using the conservative star fluxes
+						delta_u[i][k] = -dt*(f_star[i][k] - f_star[i-1][k])/dx + dt*source[i][k];  //  Calculation of delta_u using the conservative star fluxes
 						u[i][k] = u[i][k] + delta_u[i][k];
 					}
 				}
@@ -262,7 +262,7 @@ void grid()
     int i;
     // Berechnen von dx, x[i], area[i], da_dx[i]
     // Calculation of dx, x[i], area[i], da_dx[i]
-    dx = (x_max - x_min) / (imax - 1);
+    dx = (x_max - x_min) / (imax - 1.);
     for (i=0; i<imax; i++){
         x[i] = x_min + dx * i;
         area[i] = y_min + (y_max - y_min) * pow(x[i],2) / pow(x_max,2);
@@ -325,14 +325,15 @@ Bestimmen von dt als Funktion von cfl und max. Eigenwert
 Find dt as function of cfl and maximium eigenvalue
 
 */
-    for (i=0; i<imax; i++){
+
+    for (i=1; i<imax; i++){
         rho = u[i][0];
         vel = u[i][1]/rho;
-        //p = (u[i][2]-rho*pow(vel,2)/2)*(gamma-1);
-        //c = pow(gamma*p/rho,0.5);
+        p = (u[i][2]-rho*pow(vel,2)/2)*(gamma-1);
+        c = pow(gamma*p/rho,0.5);
 
-        T = (u[i][2] / u[i][0] - pow(vel, 2) / 2) * (gamma - 1) / R;
-        c = pow(gamma * R * T, 0.5);
+        //T = (u[i][2] / u[i][0] - pow(vel, 2) / 2) * (gamma - 1) / R;
+        //c = pow(gamma * R * T, 0.5);
 
         eigen = max(fabs(vel+c),fabs(vel-c));
         if (i == 0){
@@ -344,7 +345,6 @@ Find dt as function of cfl and maximium eigenvalue
     }
 
     dt = cfl * dx / eigenmax;
-
 	time = time + dt;
 }
 
@@ -360,8 +360,9 @@ void calc_f()
         rho = u[i][0];
         vel = u[i][1]/rho;
         p = (u[i][2]-rho*pow(vel,2)/2)*(gamma-1);
+
         f[i][0] = vel*rho;
-        f[i][1] = pow(vel*rho,2)/rho+p;
+        f[i][1] = pow(vel,2)*rho + p;
         f[i][2] = vel*(u[i][2]+p);
 
         source[i][0] = -da_dx[i]/area[i]*rho*vel;
@@ -380,13 +381,13 @@ void dissip_simple()
     // dissipation vector at i+1/2
     for (i = 1; i < imax-2; i++) {
         for (k=0;k<3; k++){
-            dissip[i][k] = -eps_s*dx*(u[i+2][k]-3*u[i+1][k]+3*u[i][k]-u[i-1][k]);
+            dissip[i][k] = eps_s*dx*(u[i+2][k]-3.*u[i+1][k]+3.*u[i][k]-u[i-1][k]);
         }
     }
     // dissipation vector at i=0 and i=imax-2
     for (k=0;k<3; k++){
-        dissip[0][k] = -eps_s*dx*(u[2][k]-2*u[1][k]+u[0][k]);
-        dissip[imax-2][k] = -eps_s*dx*(-u[imax-1][k]+2*u[imax-2][k]-u[imax-3][k]);
+        dissip[0][k] = eps_s*dx*(u[2][k]-2.*u[1][k]+u[0][k]);
+        dissip[imax-2][k] = eps_s*dx*(-u[imax-1][k]+2.*u[imax-2][k]-u[imax-3][k]);
     }
 
 
@@ -402,10 +403,75 @@ void dissip_complex()
 	double eps2,eps4;
 	double sensor[Mat_dim];
 
-	// dissipation vector at i+1/2
+	// dissip[i] ist an der Stelle i+1/2
+	for (i=1;i<imax-1;i++)
+	{
+		rho = u[i][1];
+        vel = u[i][2]/rho;
+        p = (gamma-1)*(u[i][2]-rho*vel*vel/2);
 
+		rho = u[i-1][1];
+        vel = u[i-1][2]/rho;
+        pm = (gamma-1)*(u[i-1][2]-rho*vel*vel/2);
 
-	// dissipation vector for i=0 and i=imax-2
+		rho = u[i+1][1];
+        vel = u[i+1][2]/rho;
+        pp = (gamma-1)*(u[i+1][2]-rho*vel*vel/2);
+
+		sensor[i] = fabs((pp-2*p+pm)/(pp+2*p+pm));
+	}
+	sensor[0] = sensor[1];
+	sensor[imax] = sensor[imax-1];
+
+	for (i=1;i<=imax-3;i++)
+	{
+        eps2 = k2*max(sensor[i+1],max(sensor[i], sensor[i-1]));
+		eps4 = max (0., k4-eps2);
+	//	printf(" %d: %lf eps2 %lf, eps4 %lf\n",i, sensor[i],eps2,eps4);
+	//	if (eps4==0.) printf("neg. eps4");
+
+		vel = u[i][1]/u[i][0];
+        p = (gamma-1)*(u[i][2]-vel*vel*u[i][0]/2);
+		c = pow(gamma*p/u[i][0],0.5);
+		eigen = max(fabs(vel+c),fabs(vel-c));
+
+		vel = u[i+1][1]/u[i+1][0];
+		p = (gamma-1)*(u[i+1][2]-vel*vel*u[i+1][0]/2);
+		c = pow(gamma*p/u[i+1][0],0.5);
+		eigenp = max(fabs(vel+c),fabs(vel-c));
+
+		for (k=1; k<=3; k++)
+		{
+		dissip[i][k] = -(eigen+eigenp)*(eps2*(u[i+1][k]-u[i][k]) - eps4* (u[i+2][k]-3.*u[i+1][k]+3.*u[i][k]-u[i-1][k])) *dx;
+		}
+	}
+
+// i=0
+	i=0;
+	vel = u[i][1]/u[i][2];
+	p = (gamma-1)*(u[i][2]-vel*vel*u[i][0]/2);
+	c = pow(gamma*p/u[i][0],0.5);
+	eigen = max(fabs(vel+c),fabs(vel-c));
+	eps2 = k2*max(sensor[i+1],sensor[i]);
+	eps4 = max (0., k4-eps2);
+	for (k=0;k<3; k++)
+	{
+		dissip[0][k] = -2*eigen*(eps2*(u[i+1][k]-u[i][k]) - eps4* (u[i+3][k]-3.*u[i+2][k]+3.*u[i+1][k]-u[i][k])) *dx;
+
+	}
+// i=imax-1
+	i=imax-2;
+	vel = u[i][1]/u[i][0];
+	p = (gamma-1)*(u[i][2]-vel*vel*u[i][0]/2);
+	c = pow(gamma*p/u[i][0],0.5);
+	eigen = max(fabs(vel+c),fabs(vel-c));
+	eigen = max(fabs(vel+c),fabs(vel-c));
+	eps2 = k2*max(sensor[i+1],max(sensor[i], sensor[i-1]));
+	eps4 = max (0., k4-eps2);
+	for (k=0;k<3; k++)
+	{
+		dissip[imax-1][k] = -2*eigen*(eps2*(u[i+1][k]-u[i][k]) - eps4* (u[i+1][k]-3.*u[i][k]+3.*u[i-1][k]-u[i-2][k])) *dx;
+	}
 
 
 }
@@ -419,7 +485,7 @@ void calc_f_star_central()
     // calculation of f_star at i+1/2 for central method
     for (i = 0; i < imax-1; i++) {
         for (k=0;k<3; k++){
-            f_star[i][k] = 1/2*(f[i+1][k]+f[i][k]) - dissip[i][k];
+            f_star[i][k] = 1/2*(f[i+1][k]+f[i][k]) + dissip[i][k];
         }
     }
 
@@ -429,16 +495,44 @@ void calc_f_star_central()
 void calc_f_star_LW()
 {
    	int i,k;
+   	double a11, a12, a13, a21, a22, a23, a31, a32, a33;
+   	double vel, rho;
+   	double A[3][3]={0.0};
+   	double u_mean[3]={0.0};
 
 	// calculation of f_star at i+1/2 for Lax-Wendroff method
+	for(i=0; i<imax-1; i++) {
 
+        u_mean[0] = 0.5 * (u[i][0] + u[i + 1][0]);
+        u_mean[1] = 0.5 * (u[i][1] + u[i + 1][1]);
+        u_mean[2] = 0.5 * (u[i][2] + u[i + 1][2]);
+
+        rho = u_mean[0];
+        vel = u_mean[1] / u_mean[0];
+
+        A[0][0] = 0.0;
+        A[0][1] = 1.0;
+        A[0][2] = 0.0;
+
+        A[1][0] = (gamma - 3) * pow(vel, 2) * 0.5;
+        A[1][1] = (3 - gamma) * vel;
+        A[1][2] = gamma - 1;
+
+        A[2][0] = (gamma - 1) * pow(vel, 3) - gamma * vel * u_mean[2] / rho;
+        A[2][1] = gamma * u_mean[2] / rho - 3 / 2 * (gamma - 1) * pow(vel, 2);
+        A[2][2] = gamma * vel;
+
+        for (k = 0; k < 3; k++) {
+            f_star[i][k] = (f[i][k] + f[i + 1][k]) / 2 - dt / (2 * dx) * (A[k][0] * (f[i + 1][0] - f[i][0]) + A[k][1] * (f[i + 1][1] - f[i][1]) +A[k][2] * (f[i + 1][2] - f[i][2]));
+        }
+    }
 }
 
 //--------------------------MCC U_q vector--------------------------------------------
 void calc_uq()
 {
     double rho,vel,p;
-	int i;
+	int i,k;
 
 	/*
 
@@ -446,7 +540,7 @@ void calc_uq()
 	Calculate U_q (forward)
 	*/
 
-	for(i=1; i<=(imax-2); i++) {
+	for(i=0; i<=(imax-1); i++) {    // TODO Tell Fehler Stoppa
 
         rho = u[i][0];
         vel = u[i][1] / rho;
@@ -459,13 +553,16 @@ void calc_uq()
 
 
 
-        source[i][0] = da_dx[i] / area[i] * f[i][0];
-        source[i][1] = da_dx[i] / area[i] * rho * pow(vel, 2);
-        source[i][2] = da_dx[i] / area[i] * f[i][2];
+        source[i][0] = - da_dx[i] / area[i] * f[i][0];
+        source[i][1] = - da_dx[i] / area[i] * rho * pow(vel, 2);
+        source[i][2] = - da_dx[i] / area[i] * f[i][2];
 
-        u_q[i][0] = u[i][0] - dt / dx * (f[i+1][0]-f[i][0]) - source[i][0];
-        u_q[i][1] = u[i][1] - dt / dx * (f[i+1][1]-f[i][1]) - source[i][1];
-        u_q[i][2] = u[i][2] - dt / dx * (f[i+1][2]-f[i][2]) - source[i][2];
+    }
+
+    for (i=1; i<imax-1; i++){
+        for (k=0; k<3; k++){
+            u_q[i][k] = u[i][k]-dt/dx*(f[i+1][k]-f[i][k])+dt*source[i][k];
+        }
     }
 
 
@@ -475,7 +572,7 @@ void calc_uq()
 void calc_uqq()
 {
     double rho,vel,p;
-	int i;
+	int i,k;
 
 	/*
 	Berechnung des des Flussvektors F und des Source-Vektors in allen Punkten fuer U_q
@@ -485,7 +582,7 @@ void calc_uqq()
 	Calculate U_qq (backward)
 	*/
 
-	for(i=1; i<=(imax-2); i++) {
+	for(i=0; i<=(imax-1); i++) {
 
         rho = u_q[i][0];
         vel = u_q[i][1] / rho;
@@ -496,13 +593,15 @@ void calc_uqq()
         f[i][1] = rho * pow(vel, 2) + p;
         f[i][2] = vel * (u[i][2] + p);
 
-        source[i][0] = da_dx[i] / area[i] * f[i][0];
-        source[i][1] = da_dx[i] / area[i] * rho * pow(vel, 2);
-        source[i][2] = da_dx[i] / area[i] * f[i][2];
+        source[i][0] = - da_dx[i] / area[i] * f[i][0];
+        source[i][1] = - da_dx[i] / area[i] * rho * pow(vel, 2);
+        source[i][2] = - da_dx[i] / area[i] * f[i][2];
 
-        u_qq[i][0] = u[i][0] - dt / dx * (f[i][0]-f[i-1][0]) - source[i][0];
-        u_qq[i][1] = u[i][1] - dt / dx * (f[i][1]-f[i-1][1]) - source[i][1];
-        u_qq[i][2] = u[i][2] - dt / dx * (f[i][2]-f[i-1][2]) - source[i][2];
+    }
+    for (i=1; i<imax-1; i++){
+        for (k=0; k<3; k++){
+            u_qq[i][k] = u[i][k]-dt/dx*(f[i][k]-f[i-1][k])+dt*source[i][k];
+        }
     }
 
 }
@@ -510,7 +609,7 @@ void calc_uqq()
 //-------------------------------U_q boundary conditions-----------------------------------
 void boundary_q()
 {
-    double rho,p,vel,e, rho_vel;
+    double rho,p,vel,temp ,rho_vel;
 
 //	Calculation of boundary values for i=0 and i=imax-1 for U_q vector
 
@@ -524,15 +623,13 @@ void boundary_q()
         rho = rho_tot;
 	}
 
-	p = p_tot * pow((R * T_tot * rho / p_tot), gamma);
-
-    vel = pow(2 * gamma * R * T_tot / (gamma - 1) * (1 - pow(p / p_tot, ((gamma - 1)/gamma))),0.5);
-
-    e = p / (gamma - 1) * pow(vel, 2) * rho / 2;
+    p = p_tot*pow(((gamma-1)/gamma*h_tot*rho/p_tot),gamma);
+    temp = pow((p/p_tot),((gamma-1)/gamma));
+    vel = pow(2*h_tot*(1-temp),0.5);
 
     u_q[0][0] = rho;
     u_q[0][1] = rho * vel;
-    u_q[0][2] = e;
+    u_q[0][2] = p/(gamma-1)+rho*vel*vel/2;
 
 	/*outlet i=imax-1*/
 
@@ -543,26 +640,21 @@ void boundary_q()
 
        vel = rho_vel / rho;
 
-       e = p_exit / (gamma-1) + rho * pow(vel,2) / 2;
+        u_q[imax-1][2] = p_exit/(gamma-1)+u_q[imax-1][1]*u_q[imax-1][1]/u_q[imax-1][0]/2.;
     }
     else
     {
-        e = 2 * u_q[imax-2][2] - u_q[imax-3][2];
+        u_q[imax-1][2] = 2*u_q[imax-2][2]-u_q[imax-3][2];
     }
 
-    u_q[imax-1][0] = rho;
-    u_q[imax-1][1] = rho_vel;
-    u_q[imax-1][2] = e;
+    u_q[imax-1][0] = 2*u_q[imax-2][0]-u_q[imax-3][0];
+    u_q[imax-1][1] = 2*u_q[imax-2][1]-u_q[imax-3][1];
 }
 
 //----------------------------U boundary conditions------------------------------------------
 void boundary()
 {
-    double p,vel;
-    double rho;
-
-	//	Bestimmen der Randwerte fuer i=0 und i=imax-1 fuer U-Vektor
-	//	Calculation of boundary values for i=0 and i=imax-1 for U vector
+    double rho,p,vel,temp;
 
 
 	/*inlet i=0*/
@@ -571,20 +663,20 @@ void boundary()
 
     if (rho > rho_tot)	rho = rho_tot;
 
-    p = p_tot*pow(R*T_tot*rho/p_tot,gamma);
+    p = p_tot*pow(((gamma-1)/gamma*h_tot*rho/p_tot),gamma);
+    temp = pow((p/p_tot),((gamma-1)/gamma));
+    vel = pow(2*h_tot*(1-temp),0.5);
 
-    vel = sqrt(2*gamma/(gamma-1)*R*T_tot*(1-pow(p/p_tot,(gamma-1)/gamma)));
     u[0][0] = rho;
     u[0][1] = vel*rho;
     u[0][2] = p/(gamma-1) + rho*pow(vel,2)/2;
 
     /*outlet i=imax-1*/
-    // TODO add if for supersonic
     u[imax-1][0] = u[imax-2][0]+(u[imax-2][0]-u[imax-3][0]);
     u[imax-1][1] = u[imax-2][1]+(u[imax-2][1]-u[imax-3][1]);
 
     if (sub_exit == 1){
-        u[imax-1][2] = p_exit/(gamma-1) + u[imax-1][0] * pow(u[imax-1][1]/u[imax-1][0],2)/2;
+        u[imax-1][2] = p_exit/(gamma-1)+u[imax-1][1]*u[imax-1][1]/u[imax-1][0]/2;
     }
     else {
         u[imax-1][2] = 2 * u[imax-2][2] - u[imax-3][2];
