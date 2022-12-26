@@ -215,8 +215,6 @@ void main()
 	output();
 
 	fclose(logfile);
-
-	return;
 }
 
 
@@ -332,6 +330,7 @@ Find dt as function of cfl and maximium eigenvalue
 		vel = u[i][2]/u[i][1];
 		p = (gamma-1)*(u[i][3]-vel*vel*u[i][1]/2);
 		c = pow(gamma*p/u[i][1],0.5);
+
 		eigen = max(fabs(vel+c),fabs(vel-c));
 		if (eigen > eigenmax)
 		{
@@ -429,7 +428,8 @@ void dissip_complex()
 	//	printf(" %d: %lf eps2 %lf, eps4 %lf\n",i, sensor[i],eps2,eps4);
 	//	if (eps4==0.) printf("neg. eps4");
 
-		vel = u[i][2]/u[i][1];		p = (gamma-1)*(u[i][3]-vel*vel*u[i][1]/2);
+		vel = u[i][2]/u[i][1];
+        p = (gamma-1)*(u[i][3]-vel*vel*u[i][1]/2);
 		c = pow(gamma*p/u[i][1],0.5);
 		eigen = max(fabs(vel+c),fabs(vel-c));
 
@@ -694,7 +694,7 @@ int conv(int itr)
 	int i,k,end;
 	double resid[4] = {0.0};
 
-	if (itr == 1) return;
+	if (itr == 1) return 0;
 
 	printf("calc timestep = %d\t", itr);
 
@@ -706,8 +706,6 @@ int conv(int itr)
 			resid[k] = resid[k] + fabs(delta_u[i][k]);
 		}
 	}
-
-
 
 	if ((itr == nprint) || (itr==2))
 	{
