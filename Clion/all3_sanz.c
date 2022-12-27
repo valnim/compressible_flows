@@ -2,7 +2,7 @@
 c***********************************************************************
 c
 c                           1D CFD code for
-cftt
+c
 c                             students of
 c                     CFD in turbomachinery
 c
@@ -487,7 +487,6 @@ void calc_f_star_central()
         for (k=1; k<=3; k++)
 		{
 			f_star[i][k] = 0.5*(f[i+1][k]+f[i][k]) + dissip[i][k];
-
 		}
 	}
 }
@@ -527,11 +526,8 @@ void calc_f_star_LW()
         for(k=1; k<=3; k++){
             f_star[i][k]=(f[i][k]+f[i+1][k])/2 - dt/(2*dx) * (A[k][1]*(f[i+1][1]-f[i][1]) + A[k][2]*(f[i+1][2]-f[i][2]) + A[k][3]*(f[i+1][3]-f[i][3]));
         }
-
 	}
-
 }
-
 
 //--------------------------MCC U_q vector--------------------------------------------
 void calc_uq()
@@ -659,10 +655,10 @@ void boundary()
 	//	Bestimmen der Randwerte fuer i=1 und i=imax fuer U-Vektor
 	//	Calculation of boundary values for i=1 and i=imax for U vector
 
-
 	/*inlet i=1*/
     rho = 2*u[2][1]-u[3][1];
-	if (rho > rho_tot)
+
+    if (rho > rho_tot)
 	{
 		rho = rho_tot;
 	}
@@ -678,6 +674,7 @@ void boundary()
 	/*outlet i=imax*/
 	u[imax][1] = 2*u[imax-1][1]-u[imax-2][1];
 	u[imax][2] = 2*u[imax-1][2]-u[imax-2][2];
+
 	if (sub_exit == 1)
 	{
 		u[imax][3] = p_exit/(gamma-1)+u[imax][2]*u[imax][2]/u[imax][1]/2;
