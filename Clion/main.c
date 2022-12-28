@@ -39,6 +39,7 @@ void dissip_simple();
 void dissip_complex();
 void calc_f_star_LW();
 void calc_f_star_central();
+void calc_f_star_roe();
 int conv(int itr);
 void output();
 void timestep();
@@ -111,7 +112,20 @@ double x[Mat_dim] = {0.0};
 double resid0;
 double resid1;
 double resid2;
+
 /*------------------------- END STATIC VARIABLES----------------------------*/
+
+
+void matrix_multiply(int n, int m, int k, double A[n][m], double B[m][k], double C[n][k]) {
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < k; j++) {
+            C[i][j] = 0;
+            for (int p = 0; p < m; p++) {
+                C[i][j] += A[i][p] * B[p][j];
+            }
+        }
+    }
+}
 
 
 void main()
@@ -188,6 +202,23 @@ void main()
                 }
 
 				break;
+
+            case 4: //Roe
+
+                calc_f();
+
+                calc_f_star_roe();
+
+                for (i=1; i<=imax-2; i++)
+                {
+                    for (k=0;k<=2;k++)
+                    {
+                        delta_u[i][k] = -dt*(f_star[i][k] - f_star[i-1][k])/dx + dt*source[i][k];
+                        u[i][k] = u[i][k] + delta_u[i][k];
+                    }
+                }
+
+                break;
 
 			default:
 
@@ -491,6 +522,88 @@ void calc_f_star_central()
     }
 }
 
+
+void calc_f_star_roe()
+{
+    int i, k, j;
+
+    //Particular Averages
+    double r_average, rho_average, u_average, h_average, c_average;
+    double hi, hip1, pi, pip1;
+    double lambda1, lambda2, lambda3;
+
+
+    double L_eigen[3][3] = {{0.0}};
+    double R_eigen[3][3] = {{0.0}};
+    double Lambda_temp[3][3] = {{0.0}};
+    double Matmul_temp1[3][3] = {{0.0}};
+    double Matmul_temp2[3][3] = {{0.0}};
+    double Matmul_temp3[3][1] = {{0.0}};
+    double U_temp[3][1] = {{0.0}};
+
+
+    for (i = 0; i<=imax-2; i++){
+        r_average = sqrt((u[i+1][0]/u[i][0]));
+        rho_average = u[i][0] * r_average;
+        u_average = (r_average*u[i+1][1]/u[i+1][0]+u[i][1]/u[i][0]) / (r_average+1);
+
+        pi = (gamma-1)*(u[i][2]-u[i][1]/u[i][0]*u[i][1]/2);
+        pip1 = (gamma-1)*(u[i+1][2]-u[i+1][1]/u[i+1][0]*u[i+1][1]/2);
+        hi = gamma/(gamma-1) * pi/u[i][0] + u[i][1]/u[i][0]*u[i][1]/u[i][0]/2.0;
+        hip1 = gamma/(gamma-1) * pi/u[i+1][0] + u[i+1][1]/u[i+1][0]*u[i+1][1]/u[i+1][0]/2.0;
+        h_average = (r_average*hip1+hi)/(r_average+1);
+
+        c_average = sqrt((gamma-1)*(h_average-u_average*u_average/2.0));
+
+        lambda1 = u_average;
+        lambda2 = u_average + c_average;
+        lambda3 = u_average - c_average;
+
+        L_eigen[0][0] = 1-(gamma-1)/2.0*u_average*u_average/c_average/c_average;
+        L_eigen[0][1] = (gamma-1)*u_average/c_average/c_average;
+        L_eigen[0][2] = -(gamma-1)/c_average/c_average;
+
+        L_eigen[1][0] = ((gamma-1)/2.0*u_average*u_average - u_average*c_average)/rho_average/c_average;
+        L_eigen[1][1] = (c_average - (gamma-1)*u_average)/rho_average/c_average;
+        L_eigen[1][2] = (gamma-1)/rho_average/c_average;
+
+        L_eigen[2][0] = ((gamma-1)/2.0*u_average*u_average + u_average*c_average)/rho_average/c_average;
+        L_eigen[2][1] = -(c_average + (gamma-1)*u_average)/rho_average/c_average;
+        L_eigen[2][2] = (gamma-1)/rho_average/c_average;
+
+        R_eigen[0][0] = 1;
+        R_eigen[0][1] = rho_average/2.0/c_average;
+        R_eigen[0][2] = rho_average/2.0/c_average;
+
+        R_eigen[1][0] = lambda1;
+        R_eigen[1][1] = rho_average/2.0/c_average*lambda2;
+        R_eigen[1][2] = rho_average/2.0/c_average*lambda3;
+
+        R_eigen[2][0] = u_average*u_average/2.0;
+        R_eigen[2][1] = rho_average/2.0/c_average*(c_average*c_average/(gamma-1)+u_average*u_average/2.0+u_average*c_average);
+        R_eigen[2][2] = rho_average/2.0/c_average*(c_average*c_average/(gamma-1)+u_average*u_average/2.0-u_average*c_average);
+
+        Lambda_temp[0][0] = (lambda1-abs(lambda1))/2.0;
+        Lambda_temp[1][1] = (lambda2-abs(lambda2))/2.0;
+        Lambda_temp[2][2] = (lambda3-abs(lambda3))/2.0;
+
+        matrix_multiply(3,3,3,R_eigen, Lambda_temp, Matmul_temp1);
+        matrix_multiply(3,3,3,Matmul_temp1, L_eigen, Matmul_temp2);
+
+        for (j=0; j < 3; j++){
+            U_temp[j][0] = u[i+1][j] - u[i][j];
+        }
+
+        matrix_multiply(3,3,1, Matmul_temp2, U_temp, Matmul_temp3);
+
+        for (k=0; k<3; k++){
+            f_star[i][k] = f[i][k] + Matmul_temp3[k][0];
+        }
+    }
+}
+
+
+
 //--------------------------f_star Lax-Wendroff-----------------------------------------
 void calc_f_star_LW()
 {
@@ -541,7 +654,7 @@ void calc_uq()
 	*/
 
 	for(i=0; i<=imax-1;i++)
-    {    // TODO Tell Fehler Stoppa
+    {
         rho = u[i][0];
         vel = u[i][1] / rho;
         p = (gamma-1)*(u[i][2]-rho*vel*vel/2);
