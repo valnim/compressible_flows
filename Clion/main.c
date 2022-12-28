@@ -28,6 +28,7 @@ c***********************************************************************/
 
 /*------------------ SUBROUTINES -------------------------*/
 void init();
+void init_shocktube();
 void grid();
 void input();
 void boundary();
@@ -339,6 +340,47 @@ void init()
 	fprintf (logfile, "%s\n", " Iter cont_resid imp_resid energy_resid");
 }
 
+//--------------------------init Shock tube ------------------------------------------
+void init_shocktube()
+{
+    FILE *old_data;
+    int i;
+
+    // Berechnen von rho_tot, am Eintritt fuer die Randbedingungen
+    // Calculaton of rho_tot at the inlet for the boundary condition algorithm
+
+    rho_tot = p_tot/R/T_tot;
+    if (iread == 0)
+    {
+        // Initialisieren des Stroemungsfeldes (Zustandsvektor U) mit den Ruhezustandswerten
+        // Initialisation of the flow field (state vector U) with the stagnation values (=total values)
+        for (i=0; i<imax/2; i++)
+        {
+            u[i][0] = rho_tot;
+            u[i][1] = 0.0;
+            u[i][2] = p_tot/(gamma-1);
+        }
+        for (i=imax/2; i<=imax-1; i++)
+        {
+            u[i][0] = rho_tot/8.0;
+            u[i][1] = 0.0;
+            u[i][2] = p_tot/(gamma-1)*0.1;
+        }
+    }
+    else
+    {
+        old_data = fopen("nozzle.out","r");
+
+        for(i=0; i<=imax-1; i++)
+            fscanf(old_data,"%lf%lf%lf\n",&u[i][0],&u[i][1],&u[i][2]);
+
+        fclose(old_data);
+    }
+
+
+    logfile = fopen("nozzle.log","w");
+    fprintf (logfile, "%s\n", " Iter cont_resid imp_resid energy_resid");
+}
 
 //--------------------------timestep calculation--------------------------------------
 void timestep()
