@@ -137,7 +137,8 @@ void main()
 
 	grid();
 
-	init();
+	//init();
+    init_shocktube();
 
 	//----------------loop start----------------------------------------
 	for (itr=1; itr<=max_iter; itr++)
