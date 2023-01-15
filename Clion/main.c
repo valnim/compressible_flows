@@ -572,7 +572,12 @@ void calc_f_star_roe()
     //Particular Averages
     double r_average, rho_average, u_average, h_average, c_average;
     double hi, hip1, pi, pip1;
+    double lambda1_average, lambda2_average, lambda3_average;
     double lambda1, lambda2, lambda3;
+    double lambda1p1, lambda2p1, lambda3p1;
+    double lambda1_average_corrected, lambda2_average_corrected, lambda3_average_corrected;
+    double epsilon1, epsilon2, epsilon3;
+    double temp;
 
 
     double L_eigen[3][3] = {{0.0}};
@@ -597,9 +602,28 @@ void calc_f_star_roe()
 
         c_average = sqrt((gamma-1)*(h_average-u_average*u_average/2.0));
 
-        lambda1 = u_average;
-        lambda2 = u_average + c_average;
-        lambda3 = u_average - c_average;
+        lambda1_average = u_average;
+        lambda2_average = u_average + c_average;
+        lambda3_average = u_average - c_average;
+
+        lambda1 = u[i][1]/u[i][0];
+        lambda2 = lambda1 + pow(gamma*pi/u[i][0],0.5);
+        lambda3 = lambda1 - pow(gamma*pi/u[i][0],0.5);
+
+        lambda1p1 = u[i+1][1]/u[i+1][0];
+        lambda2p1 = lambda1p1 + pow(gamma*pip1/u[i+1][0],0.5);
+        lambda3p1 = lambda1p1 - pow(gamma*pip1/u[i+1][0],0.5);
+
+        temp = max((lambda1_average - lambda1),(lambda1p1 - lambda1_average));
+        epsilon1 = max(0, temp);
+        temp = max((lambda2_average - lambda2),(lambda2p1 - lambda2_average));
+        epsilon2 = max(0, temp);
+        temp = max((lambda3_average - lambda3),(lambda3p1 - lambda3_average));
+        epsilon3 = max(0, temp);
+
+        lambda1_average_corrected = max(epsilon1, fabs(lambda1_average));
+        lambda2_average_corrected = max(epsilon2, fabs(lambda2_average));
+        lambda3_average_corrected = max(epsilon3, fabs(lambda3_average));
 
         L_eigen[0][0] = 1-(gamma-1)/2.0*u_average*u_average/c_average/c_average;
         L_eigen[0][1] = (gamma-1)*u_average/c_average/c_average;
@@ -617,17 +641,17 @@ void calc_f_star_roe()
         R_eigen[0][1] = rho_average/2.0/c_average;
         R_eigen[0][2] = rho_average/2.0/c_average;
 
-        R_eigen[1][0] = lambda1;
-        R_eigen[1][1] = rho_average/2.0/c_average*lambda2;
-        R_eigen[1][2] = rho_average/2.0/c_average*lambda3;
+        R_eigen[1][0] = lambda1_average;
+        R_eigen[1][1] = rho_average / 2.0 / c_average * lambda2_average;
+        R_eigen[1][2] = rho_average / 2.0 / c_average * lambda3_average;
 
         R_eigen[2][0] = u_average*u_average/2.0;
         R_eigen[2][1] = rho_average/2.0/c_average*(c_average*c_average/(gamma-1)+u_average*u_average/2.0+u_average*c_average);
         R_eigen[2][2] = rho_average/2.0/c_average*(c_average*c_average/(gamma-1)+u_average*u_average/2.0-u_average*c_average);
 
-        Lambda_temp[0][0] = (lambda1-abs(lambda1))/2.0;
-        Lambda_temp[1][1] = (lambda2-abs(lambda2))/2.0;
-        Lambda_temp[2][2] = (lambda3-abs(lambda3))/2.0;
+        Lambda_temp[0][0] = (lambda1_average - lambda1_average_corrected) / 2.0;
+        Lambda_temp[1][1] = (lambda2_average - lambda2_average_corrected) / 2.0;
+        Lambda_temp[2][2] = (lambda3_average - lambda3_average_corrected) / 2.0;
 
         matrix_multiply(3,3,3,R_eigen, Lambda_temp, Matmul_temp1);
         matrix_multiply(3,3,3,Matmul_temp1, L_eigen, Matmul_temp2);
