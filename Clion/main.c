@@ -577,7 +577,6 @@ void calc_f_star_roe()
     double lambda1p1, lambda2p1, lambda3p1;
     double lambda1_average_corrected, lambda2_average_corrected, lambda3_average_corrected;
     double epsilon1, epsilon2, epsilon3;
-    double temp;
 
 
     double L_eigen[3][3] = {{0.0}};
@@ -594,13 +593,13 @@ void calc_f_star_roe()
         rho_average = u[i][0] * r_average;
         u_average = (r_average*u[i+1][1]/u[i+1][0]+u[i][1]/u[i][0]) / (r_average+1);
 
-        pi = (gamma-1)*(u[i][2]-u[i][1]/u[i][0]*u[i][1]/2);
-        pip1 = (gamma-1)*(u[i+1][2]-u[i+1][1]/u[i+1][0]*u[i+1][1]/2);
-        hi = gamma/(gamma-1) * pi/u[i][0] + u[i][1]/u[i][0]*u[i][1]/u[i][0]/2.0;
-        hip1 = gamma/(gamma-1) * pi/u[i+1][0] + u[i+1][1]/u[i+1][0]*u[i+1][1]/u[i+1][0]/2.0;
-        h_average = (r_average*hip1+hi)/(r_average+1);
+        pi = (gamma-1.)*(u[i][2]-u[i][1]/u[i][0]*u[i][1]/2.0);
+        pip1 = (gamma-1.)*(u[i+1][2]-u[i+1][1]/u[i+1][0]*u[i+1][1]/2.0);
+        hi = gamma/(gamma-1.) * pi/u[i][0] + u[i][1]/u[i][0]*u[i][1]/u[i][0]/2.0;
+        hip1 = gamma/(gamma-1.) * pi/u[i+1][0] + u[i+1][1]/u[i+1][0]*u[i+1][1]/u[i+1][0]/2.0;
+        h_average = (r_average*hip1+hi)/(r_average+1.0);
 
-        c_average = sqrt((gamma-1)*(h_average-u_average*u_average/2.0));
+        c_average = sqrt((gamma-1.)*(h_average-u_average*u_average/2.0));
 
         lambda1_average = u_average;
         lambda2_average = u_average + c_average;
@@ -614,12 +613,9 @@ void calc_f_star_roe()
         lambda2p1 = lambda1p1 + pow(gamma*pip1/u[i+1][0],0.5);
         lambda3p1 = lambda1p1 - pow(gamma*pip1/u[i+1][0],0.5);
 
-        temp = max((lambda1_average - lambda1),(lambda1p1 - lambda1_average));
-        epsilon1 = max(0, temp);
-        temp = max((lambda2_average - lambda2),(lambda2p1 - lambda2_average));
-        epsilon2 = max(0, temp);
-        temp = max((lambda3_average - lambda3),(lambda3p1 - lambda3_average));
-        epsilon3 = max(0, temp);
+        epsilon1 = max(0, max((lambda1_average - lambda1),(lambda1p1 - lambda1_average)));
+        epsilon2 = max(0, max((lambda2_average - lambda2),(lambda2p1 - lambda2_average)));
+        epsilon3 = max(0, max((lambda3_average - lambda3),(lambda3p1 - lambda3_average)));
 
         lambda1_average_corrected = max(epsilon1, fabs(lambda1_average));
         lambda2_average_corrected = max(epsilon2, fabs(lambda2_average));
@@ -811,14 +807,16 @@ void boundary_q()
     u_q[0][2] = p/(gamma-1)+rho*vel*vel/2;
 
 	/*outlet i=imax-1*/
-    u_q[imax-1][0] = 2*u_q[imax-2][0]-u_q[imax-3][0];
-    u_q[imax-1][1] = 2*u_q[imax-2][1]-u_q[imax-3][1];
     if (sub_exit == 1){
+        u_q[imax-1][0] = 2*u_q[imax-2][0]-u_q[imax-3][0];
+        u_q[imax-1][1] = 2*u_q[imax-2][1]-u_q[imax-3][1];
         u_q[imax-1][2] = p_exit/(gamma-1)+u_q[imax-1][1]*u_q[imax-1][1]/u_q[imax-1][0]/2.;
     }
     else
     {
-        u_q[imax-1][2] = 2*u_q[imax-2][2]-u_q[imax-3][2];
+        u_q[imax-1][0] = u_q[imax-2][0];
+        u_q[imax-1][1] = u_q[imax-2][1];
+        u_q[imax-1][2] = u_q[imax-2][2];
     }
 
 
@@ -849,16 +847,17 @@ void boundary()
 
 
     /*outlet i=imax-1*/
-    u[imax-1][0] = 2*u[imax-2][0]-u[imax-3][0];
-    u[imax-1][1] = 2*u[imax-2][1]-u[imax-3][1];
-
     if (sub_exit == 1)
     {
+        u[imax-1][0] = 2*u[imax-2][0]-u[imax-3][0];
+        u[imax-1][1] = 2*u[imax-2][1]-u[imax-3][1];
         u[imax-1][2] = p_exit/(gamma-1)+u[imax-1][1]*u[imax-1][1]/u[imax-1][0]/2;
     }
     else
     {
-        u[imax-1][2] = 2 * u[imax-2][2] - u[imax-3][2];
+        u[imax-1][0] = u[imax-2][0];
+        u[imax-1][1] = u[imax-2][1];
+        u[imax-1][2] = u[imax-2][2];
     }
 
 }
