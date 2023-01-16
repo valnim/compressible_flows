@@ -90,20 +90,20 @@ double	k2;					// 2nd order parameter for complex dissipation
 FILE *logfile;
 /*control*/
 double dt;
-double dx ;
-double time ;
+double dx;
+double time;
 /*geometry*/
 double area[Mat_dim] = {0.0};
 double da_dx[Mat_dim] = {0.0};
 /*vektor*/
-double u[Mat_dim][3] = {0.0};
-double u_q[Mat_dim][3] = {0.0};
-double u_qq[Mat_dim][3] = {0.0};
-double dissip[Mat_dim][3] = {0.0};
-double delta_u[Mat_dim][3] = {0.0};
-double f[Mat_dim][3] = {0.0};
-double f_star[Mat_dim][3] = {0.0};
-double source[Mat_dim][3] = {0.0};
+double u[Mat_dim][3] = {{0.0}};
+double u_q[Mat_dim][3] = {{0.0}};
+double u_qq[Mat_dim][3] = {{0.0}};
+double dissip[Mat_dim][3] = {{0.0}};
+double delta_u[Mat_dim][3] = {{0.0}};
+double f[Mat_dim][3] = {{0.0}};
+double f_star[Mat_dim][3] = {{0.0}};
+double source[Mat_dim][3] = {{0.0}};
 /*boundary*/
 double rho_tot;
 double h_tot;
@@ -137,8 +137,8 @@ void main()
 
 	grid();
 
-    //init();
-    init_shocktube();
+    init();
+    //init_shocktube();
 
 	//----------------loop start----------------------------------------
 	for (itr=1; itr<=max_iter; itr++)
@@ -430,7 +430,7 @@ void calc_f()
     {
         rho = u[i][0];
         vel = u[i][1]/rho;
-        p = (gamma-1)*(u[i][2]-rho*vel*vel/2);
+        p = (gamma-1.0)*(u[i][2]-rho*vel*vel/2.0);
 
         f[i][0] = vel*rho;
         f[i][1] = vel*vel*rho + p;
@@ -438,7 +438,7 @@ void calc_f()
 
         temp = -da_dx[i]/area[i];
         source[i][0] = temp *f[i][0];
-        source[i][1] = temp *(f[i][1]-p);
+        source[i][1] = temp *(vel*vel*rho);
         source[i][2] = temp *f[i][2];
     }
 }
@@ -597,7 +597,7 @@ void calc_f_star_roe()
         pi = (gamma-1.)*(u[i][2]-u[i][1]/u[i][0]*u[i][1]/2.0);
         pip1 = (gamma-1.)*(u[i+1][2]-u[i+1][1]/u[i+1][0]*u[i+1][1]/2.0);
         hi = gamma/(gamma-1.) * pi/u[i][0] + u[i][1]/u[i][0]*u[i][1]/u[i][0]/2.0;
-        hip1 = gamma/(gamma-1.) * pi/u[i+1][0] + u[i+1][1]/u[i+1][0]*u[i+1][1]/u[i+1][0]/2.0;
+        hip1 = gamma/(gamma-1.) * pip1/u[i+1][0] + u[i+1][1]/u[i+1][0]*u[i+1][1]/u[i+1][0]/2.0;
         h_average = (r_average*hip1+hi)/(r_average+1.0);
 
         c_average = sqrt((gamma-1.)*(h_average-u_average*u_average/2.0));
@@ -663,6 +663,7 @@ void calc_f_star_roe()
             f_star[i][k] = f[i][k] + Matmul_temp3[k][0];
         }
     }
+
 }
 
 
@@ -844,7 +845,7 @@ void boundary()
 
     u[0][0] = rho;
     u[0][1] = vel*rho;
-    u[0][2] = p/(gamma-1) + rho*vel*vel/2;
+    u[0][2] = p/(gamma-1.0) + rho*vel*vel/2.0;
 
 
     /*outlet i=imax-1*/
@@ -852,7 +853,7 @@ void boundary()
     {
         u[imax-1][0] = 2*u[imax-2][0]-u[imax-3][0];
         u[imax-1][1] = 2*u[imax-2][1]-u[imax-3][1];
-        u[imax-1][2] = p_exit/(gamma-1)+u[imax-1][1]*u[imax-1][1]/u[imax-1][0]/2;
+        u[imax-1][2] = p_exit / (gamma-1.0)+u[imax-1][1]*u[imax-1][1]/u[imax-1][0]/2.0;
     }
     else
     {
