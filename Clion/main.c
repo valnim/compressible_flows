@@ -137,7 +137,8 @@ void main()
 
 	grid();
 
-	init();
+    //init();
+    init_shocktube();
 
 	//----------------loop start----------------------------------------
 	for (itr=1; itr<=max_iter; itr++)
@@ -403,7 +404,7 @@ Find dt as function of cfl and maximium eigenvalue
 
     for (i=1; i<imax;i++){
         vel = u[i][1]/u[i][0];
-        p = (gamma-1)*(u[i][2]-vel*vel*u[i][0]/2);
+        p = (gamma-1)*(u[i][2]-vel*vel*u[i][0]/2.0);
         c = pow(gamma*p/u[i][0],0.5);
 
 		eigen = max(fabs(vel+c),fabs(vel-c));
